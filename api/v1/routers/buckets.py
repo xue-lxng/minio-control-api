@@ -9,8 +9,14 @@ from settings import Settings
 router = APIRouter(tags=["Buckets"])
 
 
-@router.post("/create", summary="Create a new storage bucket", response_model=CreateBucketResponse)
-async def create_bucket_endpoint(data: CreateBucketRequest, settings: Settings = Depends(SettingsMarker)) -> CreateBucketResponse:
+@router.post(
+    "/create",
+    summary="Create a new storage bucket",
+    response_model=CreateBucketResponse,
+)
+async def create_bucket_endpoint(
+    data: CreateBucketRequest, settings: Settings = Depends(SettingsMarker)
+) -> CreateBucketResponse:
     """
     Create a new storage bucket if the bucket does not already exist.
     """

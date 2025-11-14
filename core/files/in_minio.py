@@ -9,13 +9,13 @@ class AsyncMinIOClient:
     """Асинхронный клиент для работы с MinIO с поддержкой множественных бакетов"""
 
     def __init__(
-            self,
-            endpoint_url: str,
-            access_key: str,
-            secret_key: str,
-            bucket_name: Optional[str] = None,
-            region: str = "us-east-1",
-            secure: bool = True
+        self,
+        endpoint_url: str,
+        access_key: str,
+        secret_key: str,
+        bucket_name: Optional[str] = None,
+        region: str = "us-east-1",
+        secure: bool = True,
     ):
         """
         Инициализация клиента MinIO
@@ -55,12 +55,12 @@ class AsyncMinIOClient:
 
         self._client = await self._exit_stack.enter_async_context(
             self._session.create_client(
-                's3',
+                "s3",
                 endpoint_url=self.endpoint_url,
                 aws_access_key_id=self.access_key,
                 aws_secret_access_key=self.secret_key,
                 region_name=self.region,
-                use_ssl=self.secure
+                use_ssl=self.secure,
             )
         )
 
@@ -87,7 +87,9 @@ class AsyncMinIOClient:
         """
         result = bucket or self.bucket_name
         if not result:
-            raise ValueError("Bucket name must be specified either in method call or during initialization")
+            raise ValueError(
+                "Bucket name must be specified either in method call or during initialization"
+            )
         return result
 
     # === Методы для управления бакетами ===
@@ -142,7 +144,7 @@ class AsyncMinIOClient:
             Список бакетов
         """
         response = await self._client.list_buckets()
-        return response.get('Buckets', [])
+        return response.get("Buckets", [])
 
     async def ensure_bucket_exists(self, bucket: str):
         """
@@ -157,12 +159,12 @@ class AsyncMinIOClient:
     # === Методы для работы с файлами ===
 
     async def upload_file(
-            self,
-            file_data: bytes,
-            object_name: str,
-            bucket: Optional[str] = None,
-            content_type: Optional[str] = None,
-            metadata: Optional[Dict[str, str]] = None
+        self,
+        file_data: bytes,
+        object_name: str,
+        bucket: Optional[str] = None,
+        content_type: Optional[str] = None,
+        metadata: Optional[Dict[str, str]] = None,
     ) -> Dict[str, Any]:
         """
         Загрузка файла в MinIO
@@ -180,24 +182,21 @@ class AsyncMinIOClient:
         bucket = self._get_bucket(bucket)
         extra_args = {}
         if content_type:
-            extra_args['ContentType'] = content_type
+            extra_args["ContentType"] = content_type
         if metadata:
-            extra_args['Metadata'] = metadata
+            extra_args["Metadata"] = metadata
 
         response = await self._client.put_object(
-            Bucket=bucket,
-            Key=object_name,
-            Body=file_data,
-            **extra_args
+            Bucket=bucket, Key=object_name, Body=file_data, **extra_args
         )
         return response
 
     async def upload_fileobj(
-            self,
-            file_obj: BinaryIO,
-            object_name: str,
-            bucket: Optional[str] = None,
-            content_type: Optional[str] = None
+        self,
+        file_obj: BinaryIO,
+        object_name: str,
+        bucket: Optional[str] = None,
+        content_type: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Загрузка файлового объекта в MinIO
@@ -214,20 +213,15 @@ class AsyncMinIOClient:
         bucket = self._get_bucket(bucket)
         extra_args = {}
         if content_type:
-            extra_args['ContentType'] = content_type
+            extra_args["ContentType"] = content_type
 
         response = await self._client.put_object(
-            Bucket=bucket,
-            Key=object_name,
-            Body=file_obj,
-            **extra_args
+            Bucket=bucket, Key=object_name, Body=file_obj, **extra_args
         )
         return response
 
     async def download_file(
-            self,
-            object_name: str,
-            bucket: Optional[str] = None
+        self, object_name: str, bucket: Optional[str] = None
     ) -> bytes:
         """
         Скачивание файла из MinIO
@@ -240,19 +234,13 @@ class AsyncMinIOClient:
             Содержимое файла в виде bytes
         """
         bucket = self._get_bucket(bucket)
-        response = await self._client.get_object(
-            Bucket=bucket,
-            Key=object_name
-        )
+        response = await self._client.get_object(Bucket=bucket, Key=object_name)
 
-        async with response['Body'] as stream:
+        async with response["Body"] as stream:
             return await stream.read()
 
     async def download_fileobj(
-            self,
-            object_name: str,
-            file_obj: BinaryIO,
-            bucket: Optional[str] = None
+        self, object_name: str, file_obj: BinaryIO, bucket: Optional[str] = None
     ):
         """
         Скачивание файла из MinIO в файловый объект
@@ -263,12 +251,9 @@ class AsyncMinIOClient:
             bucket: Имя бакета (если None, используется дефолтный)
         """
         bucket = self._get_bucket(bucket)
-        response = await self._client.get_object(
-            Bucket=bucket,
-            Key=object_name
-        )
+        response = await self._client.get_object(Bucket=bucket, Key=object_name)
 
-        async with response['Body'] as stream:
+        async with response["Body"] as stream:
             while True:
                 chunk = await stream.read(8192)
                 if not chunk:
@@ -276,9 +261,7 @@ class AsyncMinIOClient:
                 file_obj.write(chunk)
 
     async def delete_file(
-            self,
-            object_name: str,
-            bucket: Optional[str] = None
+        self, object_name: str, bucket: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Удаление файла из MinIO
@@ -291,16 +274,11 @@ class AsyncMinIOClient:
             Ответ от MinIO
         """
         bucket = self._get_bucket(bucket)
-        response = await self._client.delete_object(
-            Bucket=bucket,
-            Key=object_name
-        )
+        response = await self._client.delete_object(Bucket=bucket, Key=object_name)
         return response
 
     async def delete_files(
-            self,
-            object_names: List[str],
-            bucket: Optional[str] = None
+        self, object_names: List[str], bucket: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Массовое удаление файлов из MinIO
@@ -313,18 +291,13 @@ class AsyncMinIOClient:
             Ответ от MinIO
         """
         bucket = self._get_bucket(bucket)
-        objects = [{'Key': name} for name in object_names]
+        objects = [{"Key": name} for name in object_names]
         response = await self._client.delete_objects(
-            Bucket=bucket,
-            Delete={'Objects': objects}
+            Bucket=bucket, Delete={"Objects": objects}
         )
         return response
 
-    async def file_exists(
-            self,
-            object_name: str,
-            bucket: Optional[str] = None
-    ) -> bool:
+    async def file_exists(self, object_name: str, bucket: Optional[str] = None) -> bool:
         """
         Проверка существования файла
 
@@ -337,18 +310,13 @@ class AsyncMinIOClient:
         """
         bucket = self._get_bucket(bucket)
         try:
-            await self._client.head_object(
-                Bucket=bucket,
-                Key=object_name
-            )
+            await self._client.head_object(Bucket=bucket, Key=object_name)
             return True
         except ClientError:
             return False
 
     async def get_file_info(
-            self,
-            object_name: str,
-            bucket: Optional[str] = None
+        self, object_name: str, bucket: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Получение информации о файле
@@ -361,17 +329,11 @@ class AsyncMinIOClient:
             Метаданные файла
         """
         bucket = self._get_bucket(bucket)
-        response = await self._client.head_object(
-            Bucket=bucket,
-            Key=object_name
-        )
+        response = await self._client.head_object(Bucket=bucket, Key=object_name)
         return response
 
     async def list_files(
-            self,
-            prefix: str = "",
-            bucket: Optional[str] = None,
-            max_keys: int = 1000
+        self, prefix: str = "", bucket: Optional[str] = None, max_keys: int = 1000
     ) -> AsyncIterator[Dict[str, Any]]:
         """
         Получение списка файлов с использованием пагинации
@@ -385,22 +347,20 @@ class AsyncMinIOClient:
             Информация о каждом объекте
         """
         bucket = self._get_bucket(bucket)
-        paginator = self._client.get_paginator('list_objects_v2')
+        paginator = self._client.get_paginator("list_objects_v2")
 
         async for result in paginator.paginate(
-                Bucket=bucket,
-                Prefix=prefix,
-                PaginationConfig={'PageSize': max_keys}
+            Bucket=bucket, Prefix=prefix, PaginationConfig={"PageSize": max_keys}
         ):
-            for obj in result.get('Contents', []):
+            for obj in result.get("Contents", []):
                 yield obj
 
     async def get_presigned_url(
-            self,
-            object_name: str,
-            bucket: Optional[str] = None,
-            expiration: int = 3600,
-            method: str = 'get_object'
+        self,
+        object_name: str,
+        bucket: Optional[str] = None,
+        expiration: int = 3600,
+        method: str = "get_object",
     ) -> str:
         """
         Генерация presigned URL для доступа к файлу
@@ -416,21 +376,16 @@ class AsyncMinIOClient:
         """
         bucket = self._get_bucket(bucket)
         url = await self._client.generate_presigned_url(
-            method,
-            Params={
-                'Bucket': bucket,
-                'Key': object_name
-            },
-            ExpiresIn=expiration
+            method, Params={"Bucket": bucket, "Key": object_name}, ExpiresIn=expiration
         )
         return url
 
     async def copy_file(
-            self,
-            source_object: str,
-            dest_object: str,
-            source_bucket: Optional[str] = None,
-            dest_bucket: Optional[str] = None
+        self,
+        source_object: str,
+        dest_object: str,
+        source_bucket: Optional[str] = None,
+        dest_bucket: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Копирование файла внутри MinIO (в том числе между бакетами)
@@ -447,24 +402,19 @@ class AsyncMinIOClient:
         source_bucket = self._get_bucket(source_bucket)
         dest_bucket = self._get_bucket(dest_bucket)
 
-        copy_source = {
-            'Bucket': source_bucket,
-            'Key': source_object
-        }
+        copy_source = {"Bucket": source_bucket, "Key": source_object}
 
         response = await self._client.copy_object(
-            CopySource=copy_source,
-            Bucket=dest_bucket,
-            Key=dest_object
+            CopySource=copy_source, Bucket=dest_bucket, Key=dest_object
         )
         return response
 
     async def move_file(
-            self,
-            source_object: str,
-            dest_object: str,
-            source_bucket: Optional[str] = None,
-            dest_bucket: Optional[str] = None
+        self,
+        source_object: str,
+        dest_object: str,
+        source_bucket: Optional[str] = None,
+        dest_bucket: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Перемещение файла (копирование + удаление исходного)
@@ -480,8 +430,7 @@ class AsyncMinIOClient:
         """
         # Копируем файл
         response = await self.copy_file(
-            source_object, dest_object,
-            source_bucket, dest_bucket
+            source_object, dest_object, source_bucket, dest_bucket
         )
 
         # Удаляем исходный

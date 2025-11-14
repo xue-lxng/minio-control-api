@@ -18,12 +18,12 @@ placeholder_map = {
     "spreadsheet": "xls/placeholder.xlsx",
 }
 
+
 async def check_cached_images(link: str, key: str, redis: AsyncRedisCache):
     async with aiohttp.ClientSession() as session:
         async with session.get(link) as response:
             if response.status != 200:
                 await redis.delete(key)
-
 
 
 async def get_file_link_service(
@@ -32,7 +32,7 @@ async def get_file_link_service(
     file_type: str,
     placeholder_if_not_found: bool,
     settings: Settings,
-    redis: AsyncRedisCache
+    redis: AsyncRedisCache,
 ) -> Optional[str]:
     """
     Generate a file download link from cloud storage.
@@ -53,19 +53,27 @@ async def get_file_link_service(
         return cached_link
 
     async with AsyncMinIOClient(
-            endpoint_url=settings.endpoint_url,
-            access_key=settings.access_key,
-            secret_key=settings.secret_key,
+        endpoint_url=settings.endpoint_url,
+        access_key=settings.access_key,
+        secret_key=settings.secret_key,
     ) as minio:
         if not await minio.file_exists(file_path, bucket=bucket_name):
             if placeholder_if_not_found:
-                return await get_file_link_service(bucket_name="default", file_path=placeholder_map[file_type], file_type=file_type, placeholder_if_not_found=False, settings=settings, redis=redis)
+                return await get_file_link_service(
+                    bucket_name="default",
+                    file_path=placeholder_map[file_type],
+                    file_type=file_type,
+                    placeholder_if_not_found=False,
+                    settings=settings,
+                    redis=redis,
+                )
             raise ValueError(f"File {file_path} does not exist in bucket {bucket_name}")
-
 
         link = await minio.get_presigned_url(
             bucket=bucket_name,
             object_name=file_path,
         )
-        await redis.set(f"file_link:{bucket_name}:{file_path}", link, ttl=3600, compress=True)
+        await redis.set(
+            f"file_link:{bucket_name}:{file_path}", link, ttl=3600, compress=True
+        )
         return link

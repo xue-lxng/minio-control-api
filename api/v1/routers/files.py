@@ -8,13 +8,17 @@ from core.caching.in_redis import AsyncRedisCache
 from deps import SettingsMarker, RedisMarker
 from settings import Settings
 
-router = APIRouter(
-    tags=["Files"]
+router = APIRouter(tags=["Files"])
+
+
+@router.post(
+    "/image/link", summary="Get file download link", response_model=GetLinkResponseModel
 )
-
-
-@router.post("/image/link", summary="Get file download link", response_model=GetLinkResponseModel)
-async def get_image_link(data: GetImageLinkRequestModel, settings: Settings = Depends(SettingsMarker), redis: AsyncRedisCache = Depends(RedisMarker)):
+async def get_image_link(
+    data: GetImageLinkRequestModel,
+    settings: Settings = Depends(SettingsMarker),
+    redis: AsyncRedisCache = Depends(RedisMarker),
+):
     """Get file download link from cloud storage if the file exists. If the file does not exist, return an error message or placeholder if specified."""
     try:
         link = await get_file_link_service(
@@ -23,7 +27,7 @@ async def get_image_link(data: GetImageLinkRequestModel, settings: Settings = De
             file_type="image",
             placeholder_if_not_found=data.placeholder_if_not_found,
             settings=settings,
-            redis=redis
+            redis=redis,
         )
     except Exception as e:
         return GetLinkResponseModel(link="", error=str(e))
