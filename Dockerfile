@@ -1,5 +1,24 @@
+FROM python:3.13-alpine AS builder
+
+WORKDIR /build
+COPY requirements.txt .
+RUN pip install --no-cache-dir --user --no-warn-script-location -r requirements.txt
+
+
 FROM python:3.13-alpine
-COPY . /app
+
+RUN addgroup -g 1000 appuser && adduser -D -u 1000 -G appuser appuser
+
 WORKDIR /app
-RUN pip install --no-cache-dir --upgrade -r requirements.txt
-CMD ["uvicorn", "main:root_app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+COPY --from=builder --chown=appuser:appuser /root/.local /home/appuser/.local
+COPY --chown=appuser:appuser . .
+
+ENV PATH=/home/appuser/.local/bin:$PATH \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+USER appuser
+
+EXPOSE 8015
+
+CMD ["uvicorn", "main:root_app", "--host", "0.0.0.0", "--port", "8015", "--workers", "4"]
