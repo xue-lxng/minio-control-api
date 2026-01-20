@@ -321,4 +321,4 @@ For issues, questions, or suggestions:
 ---
 
 **Version:** 0.1.0  
-**Last Updated:** 14.11.2025
+**Last Updated:** 21.01.2026
